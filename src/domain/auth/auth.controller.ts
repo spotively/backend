@@ -4,6 +4,8 @@ import { env, SPOTIFY_SCOPES } from "../../config/env";
 const getSpotifyBasicAuth = () =>
   `Basic ${Buffer.from(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`).toString('base64')}`
 
+const isProduction = !env.FRONTEND_URL.includes('127.0.0.1') && !env.FRONTEND_URL.includes('localhost');
+
 export const authController = new Elysia({ prefix: '/auth' })
   .get('/login', ({ redirect }) => {
     const params = new URLSearchParams({
@@ -33,18 +35,20 @@ export const authController = new Elysia({ prefix: '/auth' })
     const data = await response.json();
     if (data.error) return new Response(`Error: ${data.error_description}`, { status: 400 });
 
-    console.log('[Auth] Setting cookies for tokens...');
+    console.log('[Auth] Setting cookies for tokens... Production mode:', isProduction);
 
     cookie.spotify_access.value = data.access_token;
     cookie.spotify_access.httpOnly = false;
     cookie.spotify_access.path = '/';
-    cookie.spotify_access.sameSite = 'lax';
+    cookie.spotify_access.sameSite = isProduction ? 'none' : 'lax';
+    cookie.spotify_access.secure = isProduction;
     cookie.spotify_access.maxAge = data.expires_in;
 
     cookie.spotify_refresh.value = data.refresh_token;
     cookie.spotify_refresh.httpOnly = false;
     cookie.spotify_refresh.path = '/';
-    cookie.spotify_refresh.sameSite = 'lax';
+    cookie.spotify_refresh.sameSite = isProduction ? 'none' : 'lax';
+    cookie.spotify_refresh.secure = isProduction;
     cookie.spotify_refresh.maxAge = 60 * 60 * 24 * 30; // 30 days
 
     return redirect(`${env.FRONTEND_URL}/?status=success`);
@@ -54,3 +58,4 @@ export const authController = new Elysia({ prefix: '/auth' })
     cookie.spotify_refresh.remove();
     return { success: true, message: 'Logged out successfully' };
   })
+
