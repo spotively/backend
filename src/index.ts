@@ -8,7 +8,7 @@ console.log('Backend running. Frontend expected at:', env.FRONTEND_URL);
 
 const app = new Elysia()
   .use(cors({
-    origin: true,
+    origin: [env.FRONTEND_URL, 'https://frontend-7z9.pages.dev'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization']
   }))
