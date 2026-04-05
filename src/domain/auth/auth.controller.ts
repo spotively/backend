@@ -5,7 +5,7 @@ const getSpotifyBasicAuth = () =>
   `Basic ${Buffer.from(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`).toString('base64')}`
 
 // Better production detection: NODE_ENV is standard, or check if FRONTEND_URL is HTTPS (indicates production/hosted environment)
-const isProduction = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+export const isProduction = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
 
 export const authController = new Elysia({ prefix: '/auth' })
   .get('/login', ({ redirect }) => {
@@ -20,12 +20,12 @@ export const authController = new Elysia({ prefix: '/auth' })
   .get('/callback', async ({ query, cookie, redirect, request, set }) => {
     const code = query.code as string;
     if (!code) return new Response('Authorization failed', { status: 400 });
-    
+
     // Aggressive production detection
-    const isProd = env.NODE_ENV === 'production' || 
-                   env.FRONTEND_URL.startsWith('https://') ||
-                   request.url.startsWith('https://') ||
-                   request.headers.get('x-forwarded-proto') === 'https'; // Trust proxy for SSL termination
+    const isProd = env.NODE_ENV === 'production' ||
+      env.FRONTEND_URL.startsWith('https://') ||
+      request.url.startsWith('https://') ||
+      request.headers.get('x-forwarded-proto') === 'https'; // Trust proxy for SSL termination
 
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -68,14 +68,22 @@ export const authController = new Elysia({ prefix: '/auth' })
       path: '/',
       sameSite: isProd ? 'none' : 'lax',
       secure: isProd,
-      partitioned: isProd, 
+      partitioned: isProd,
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 
     // Set diagnostic header for verifying deployment
     set.headers['X-Debug-Mode'] = isProd ? 'production' : 'development';
 
-    return redirect(`${env.FRONTEND_URL}/?status=success`);
+    // To bypass cross-site cookie blocking in some production environments,
+    // we also return the initial tokens in the URL hash for the frontend to store.
+    const hashParams = new URLSearchParams({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in.toString()
+    });
+
+    return redirect(`${env.FRONTEND_URL}/#${hashParams.toString()}&status=success`);
   })
   .post('/logout', ({ cookie }) => {
     cookie.spotify_access.remove();

@@ -16,12 +16,28 @@ function parseCookieHeader(header: string | null): Record<string, string> {
 
 /** Read tokens directly from the raw Cookie request header */
 function getTokensFromRequest(request: Request): { accessToken: string; refreshToken: string } {
+  const authHeader = request.headers.get('authorization');
+  let accessToken = '';
+  let refreshToken = '';
+
+  if (authHeader?.startsWith('Bearer ')) {
+    accessToken = authHeader.substring(7);
+    console.log('[AUTH] Using Bearer token from Authorization header');
+  }
+
   const cookies = parseCookieHeader(request.headers.get('cookie'));
-  console.log('[AUTH] Raw cookies received:', Object.keys(cookies));
-  return {
-    accessToken: cookies['spotify_access'] ?? '',
-    refreshToken: cookies['spotify_refresh'] ?? '',
-  };
+  if (!accessToken) {
+    accessToken = cookies['spotify_access'] ?? '';
+  }
+  refreshToken = cookies['spotify_refresh'] ?? '';
+
+  console.log('[AUTH] Token status:', { 
+    hasAccess: !!accessToken, 
+    hasRefresh: !!refreshToken,
+    source: authHeader?.startsWith('Bearer ') ? 'header' : 'cookie'
+  });
+
+  return { accessToken, refreshToken };
 }
 
 // Standalone debug route — no derive, so cookie reading is always reliable here
