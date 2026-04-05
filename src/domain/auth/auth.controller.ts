@@ -17,9 +17,15 @@ export const authController = new Elysia({ prefix: '/auth' })
     });
     return redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
   })
-  .get('/callback', async ({ query, cookie, redirect }) => {
+  .get('/callback', async ({ query, cookie, redirect, request }) => {
     const code = query.code as string;
     if (!code) return new Response('Authorization failed', { status: 400 });
+    
+    // Aggressive production detection
+    const isProd = env.NODE_ENV === 'production' || 
+                   env.FRONTEND_URL.startsWith('https://') ||
+                   request.url.startsWith('https://');
+
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
@@ -36,16 +42,21 @@ export const authController = new Elysia({ prefix: '/auth' })
     const data = await response.json();
     if (data.error) return new Response(`Error: ${data.error_description}`, { status: 400 });
 
-    console.log('[Auth] Logged in successfully. Production mode:', isProduction);
-    console.log('[Auth] Frontend URL:', env.FRONTEND_URL);
+    console.log('[Auth] Logged in successfully. Env Mode:', {
+      isProd,
+      nodeEnv: env.NODE_ENV,
+      frontendUrl: env.FRONTEND_URL,
+      requestUrl: request.url
+    });
 
     // Secure cookie configuration for cross-site production support
     cookie.spotify_access.set({
       value: data.access_token,
-      httpOnly: true, // More secure, frontend doesn't need to read tokens
+      httpOnly: true,
       path: '/',
-      sameSite: isProduction ? 'none' : 'lax', // 'none' is REQUIRED for cross-domain cookies
-      secure: isProduction, // 'secure' is REQUIRED for sameSite: 'none'
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd,
+      partitioned: isProd, // Modern browser compatibility for cross-site cookies
       maxAge: data.expires_in
     });
 
@@ -53,8 +64,9 @@ export const authController = new Elysia({ prefix: '/auth' })
       value: data.refresh_token,
       httpOnly: true,
       path: '/',
-      sameSite: isProduction ? 'none' : 'lax',
-      secure: isProduction,
+      sameSite: isProd ? 'none' : 'lax',
+      secure: isProd,
+      partitioned: isProd,
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 

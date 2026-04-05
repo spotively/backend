@@ -44,13 +44,16 @@ export const appController = new Elysia({ prefix: '/api' })
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
-      const isProd = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+      const isProd = env.NODE_ENV === 'production' || 
+                     env.FRONTEND_URL.startsWith('https://') ||
+                     request.url.startsWith('https://');
       cookie.spotify_access.set({
         value: newAccess,
         httpOnly: true,
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
+        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -59,6 +62,7 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
+          partitioned: isProd,
         });
       }
     };
@@ -85,13 +89,16 @@ export const appController = new Elysia({ prefix: '/api' })
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
-      const isProd = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+      const isProd = env.NODE_ENV === 'production' || 
+                     env.FRONTEND_URL.startsWith('https://') ||
+                     request.url.startsWith('https://');
       cookie.spotify_access.set({
         value: newAccess,
         httpOnly: true,
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
+        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -100,6 +107,7 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
+          partitioned: isProd,
         });
       }
     };
@@ -115,13 +123,16 @@ export const appController = new Elysia({ prefix: '/api' })
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
-      const isProd = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+      const isProd = env.NODE_ENV === 'production' || 
+                     env.FRONTEND_URL.startsWith('https://') ||
+                     request.url.startsWith('https://');
       cookie.spotify_access.set({
         value: newAccess,
         httpOnly: true,
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
+        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -130,6 +141,7 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
+          partitioned: isProd,
         });
       }
     };
