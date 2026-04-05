@@ -46,7 +46,8 @@ export const appController = new Elysia({ prefix: '/api' })
     const updateTokens = (newAccess: string, newRefresh?: string) => {
       const isProd = env.NODE_ENV === 'production' || 
                      env.FRONTEND_URL.startsWith('https://') ||
-                     request.url.startsWith('https://');
+                     request.url.startsWith('https://') ||
+                     request.headers.get('x-forwarded-proto') === 'https';
       cookie.spotify_access.set({
         value: newAccess,
         httpOnly: true,
@@ -91,7 +92,8 @@ export const appController = new Elysia({ prefix: '/api' })
     const updateTokens = (newAccess: string, newRefresh?: string) => {
       const isProd = env.NODE_ENV === 'production' || 
                      env.FRONTEND_URL.startsWith('https://') ||
-                     request.url.startsWith('https://');
+                     request.url.startsWith('https://') ||
+                     request.headers.get('x-forwarded-proto') === 'https';
       cookie.spotify_access.set({
         value: newAccess,
         httpOnly: true,
@@ -125,7 +127,8 @@ export const appController = new Elysia({ prefix: '/api' })
     const updateTokens = (newAccess: string, newRefresh?: string) => {
       const isProd = env.NODE_ENV === 'production' || 
                      env.FRONTEND_URL.startsWith('https://') ||
-                     request.url.startsWith('https://');
+                     request.url.startsWith('https://') ||
+                     request.headers.get('x-forwarded-proto') === 'https';
       cookie.spotify_access.set({
         value: newAccess,
         httpOnly: true,

@@ -24,7 +24,8 @@ export const authController = new Elysia({ prefix: '/auth' })
     // Aggressive production detection
     const isProd = env.NODE_ENV === 'production' || 
                    env.FRONTEND_URL.startsWith('https://') ||
-                   request.url.startsWith('https://');
+                   request.url.startsWith('https://') ||
+                   request.headers.get('x-forwarded-proto') === 'https'; // Trust proxy for SSL termination
 
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -46,7 +47,8 @@ export const authController = new Elysia({ prefix: '/auth' })
       isProd,
       nodeEnv: env.NODE_ENV,
       frontendUrl: env.FRONTEND_URL,
-      requestUrl: request.url
+      requestUrl: request.url,
+      xForwardedProto: request.headers.get('x-forwarded-proto')
     });
 
     // Secure cookie configuration for cross-site production support
@@ -56,7 +58,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       path: '/',
       sameSite: isProd ? 'none' : 'lax',
       secure: isProd,
-      partitioned: isProd, // Modern browser compatibility for cross-site cookies
+      partitioned: isProd,
       maxAge: data.expires_in
     });
 
@@ -70,7 +72,15 @@ export const authController = new Elysia({ prefix: '/auth' })
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 
-    return redirect(`${env.FRONTEND_URL}/?status=success`);
+    // Set diagnostic header for verifying deployment
+    const responseHeaders = new Headers();
+    responseHeaders.set('Location', `${env.FRONTEND_URL}/?status=success`);
+    responseHeaders.set('X-Debug-Mode', isProd ? 'production' : 'development');
+
+    return new Response(null, {
+      status: 302,
+      headers: responseHeaders,
+    });
   })
   .post('/logout', ({ cookie }) => {
     cookie.spotify_access.remove();
