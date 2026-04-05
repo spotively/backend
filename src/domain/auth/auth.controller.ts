@@ -83,7 +83,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       expires_in: data.expires_in.toString()
     });
 
-    return redirect(`${env.FRONTEND_URL}/#${hashParams.toString()}&status=success`);
+    return redirect(`${env.FRONTEND_URL}/?status=success#${hashParams.toString()}`);
   })
   .post('/logout', ({ cookie }) => {
     cookie.spotify_access.remove();
