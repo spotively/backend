@@ -1,6 +1,7 @@
 import Elysia, { t } from "elysia";
 import { SpotifyService } from "../spotify/spotify.service";
 import { ImageService } from "../image/image.service";
+import { env } from "../../config/env";
 
 /** Parse a raw Cookie header string into a key/value map */
 function parseCookieHeader(header: string | null): Record<string, string> {
@@ -43,8 +44,23 @@ export const appController = new Elysia({ prefix: '/api' })
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
-      cookie.spotify_access.value = newAccess;
-      if (newRefresh) cookie.spotify_refresh.value = newRefresh;
+      const isProd = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+      cookie.spotify_access.set({
+        value: newAccess,
+        httpOnly: true,
+        path: '/',
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+      });
+      if (newRefresh) {
+        cookie.spotify_refresh.set({
+          value: newRefresh,
+          httpOnly: true,
+          path: '/',
+          sameSite: isProd ? 'none' : 'lax',
+          secure: isProd,
+        });
+      }
     };
 
     const spotifyService = new SpotifyService(accessToken, refreshToken, updateTokens);
@@ -69,8 +85,23 @@ export const appController = new Elysia({ prefix: '/api' })
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
-      cookie.spotify_access.value = newAccess;
-      if (newRefresh) cookie.spotify_refresh.value = newRefresh;
+      const isProd = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+      cookie.spotify_access.set({
+        value: newAccess,
+        httpOnly: true,
+        path: '/',
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+      });
+      if (newRefresh) {
+        cookie.spotify_refresh.set({
+          value: newRefresh,
+          httpOnly: true,
+          path: '/',
+          sameSite: isProd ? 'none' : 'lax',
+          secure: isProd,
+        });
+      }
     };
 
     return await new SpotifyService(accessToken, refreshToken, updateTokens).getUserProfile();
@@ -84,8 +115,23 @@ export const appController = new Elysia({ prefix: '/api' })
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
-      cookie.spotify_access.value = newAccess;
-      if (newRefresh) cookie.spotify_refresh.value = newRefresh;
+      const isProd = env.NODE_ENV === 'production' || env.FRONTEND_URL.startsWith('https://');
+      cookie.spotify_access.set({
+        value: newAccess,
+        httpOnly: true,
+        path: '/',
+        sameSite: isProd ? 'none' : 'lax',
+        secure: isProd,
+      });
+      if (newRefresh) {
+        cookie.spotify_refresh.set({
+          value: newRefresh,
+          httpOnly: true,
+          path: '/',
+          sameSite: isProd ? 'none' : 'lax',
+          secure: isProd,
+        });
+      }
     };
 
     const spotifyService = new SpotifyService(accessToken, refreshToken, updateTokens);
