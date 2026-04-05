@@ -39,8 +39,12 @@ export const appController = new Elysia({ prefix: '/api' })
     const { accessToken, refreshToken } = getTokensFromRequest(request);
 
     if (!accessToken || !refreshToken) {
+      const isProd = env.NODE_ENV === 'production' || 
+                     env.FRONTEND_URL.startsWith('https://') ||
+                     request.url.startsWith('https://') ||
+                     request.headers.get('x-forwarded-proto') === 'https';
       set.status = 401;
-      return { error: 'userUnauthorized, Please login first' };
+      return { error: `userUnauthorized, Please login first (${isProd ? 'Prod Mode' : 'Dev Mode'})` };
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
@@ -54,7 +58,6 @@ export const appController = new Elysia({ prefix: '/api' })
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
-        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -63,7 +66,6 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
-          partitioned: isProd,
         });
       }
     };
@@ -85,8 +87,12 @@ export const appController = new Elysia({ prefix: '/api' })
     const { accessToken, refreshToken } = getTokensFromRequest(request);
 
     if (!accessToken || !refreshToken) {
+      const isProd = env.NODE_ENV === 'production' || 
+                     env.FRONTEND_URL.startsWith('https://') ||
+                     request.url.startsWith('https://') ||
+                     request.headers.get('x-forwarded-proto') === 'https';
       set.status = 401;
-      return { error: 'Unauthorized' };
+      return { error: `Unauthorized (${isProd ? 'Prod Mode' : 'Dev Mode'})` };
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
@@ -100,7 +106,6 @@ export const appController = new Elysia({ prefix: '/api' })
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
-        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -109,7 +114,6 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
-          partitioned: isProd,
         });
       }
     };
@@ -120,8 +124,12 @@ export const appController = new Elysia({ prefix: '/api' })
     const { accessToken, refreshToken } = getTokensFromRequest(request);
 
     if (!accessToken || !refreshToken) {
+      const isProd = env.NODE_ENV === 'production' || 
+                     env.FRONTEND_URL.startsWith('https://') ||
+                     request.url.startsWith('https://') ||
+                     request.headers.get('x-forwarded-proto') === 'https';
       set.status = 401;
-      return { error: 'Unauthorized. Please /auth/login first.' };
+      return { error: `Unauthorized. Please /auth/login first. (${isProd ? 'Prod Mode' : 'Dev Mode'})` };
     }
 
     const updateTokens = (newAccess: string, newRefresh?: string) => {
@@ -135,7 +143,6 @@ export const appController = new Elysia({ prefix: '/api' })
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
-        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -144,7 +151,6 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
-          partitioned: isProd,
         });
       }
     };

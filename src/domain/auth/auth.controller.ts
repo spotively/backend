@@ -58,7 +58,6 @@ export const authController = new Elysia({ prefix: '/auth' })
       path: '/',
       sameSite: isProd ? 'none' : 'lax',
       secure: isProd,
-      partitioned: isProd,
       maxAge: data.expires_in
     });
 
@@ -68,7 +67,6 @@ export const authController = new Elysia({ prefix: '/auth' })
       path: '/',
       sameSite: isProd ? 'none' : 'lax',
       secure: isProd,
-      partitioned: isProd,
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 
