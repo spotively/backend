@@ -17,7 +17,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     });
     return redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
   })
-  .get('/callback', async ({ query, cookie, redirect, request }) => {
+  .get('/callback', async ({ query, cookie, redirect, request, set }) => {
     const code = query.code as string;
     if (!code) return new Response('Authorization failed', { status: 400 });
     
@@ -73,14 +73,9 @@ export const authController = new Elysia({ prefix: '/auth' })
     });
 
     // Set diagnostic header for verifying deployment
-    const responseHeaders = new Headers();
-    responseHeaders.set('Location', `${env.FRONTEND_URL}/?status=success`);
-    responseHeaders.set('X-Debug-Mode', isProd ? 'production' : 'development');
+    set.headers['X-Debug-Mode'] = isProd ? 'production' : 'development';
 
-    return new Response(null, {
-      status: 302,
-      headers: responseHeaders,
-    });
+    return redirect(`${env.FRONTEND_URL}/?status=success`);
   })
   .post('/logout', ({ cookie }) => {
     cookie.spotify_access.remove();
