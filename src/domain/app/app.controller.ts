@@ -17,24 +17,31 @@ function parseCookieHeader(header: string | null): Record<string, string> {
 /** Read tokens directly from the raw Cookie request header */
 function getTokensFromRequest(request: Request): { accessToken: string; refreshToken: string } {
   const authHeader = request.headers.get('authorization');
+  const refreshHeader = request.headers.get('x-spotify-refresh');
   let accessToken = '';
   let refreshToken = '';
 
   if (authHeader?.startsWith('Bearer ')) {
     accessToken = authHeader.substring(7);
-    console.log('[AUTH] Using Bearer token from Authorization header');
+  }
+
+  if (refreshHeader) {
+    refreshToken = refreshHeader;
   }
 
   const cookies = parseCookieHeader(request.headers.get('cookie'));
   if (!accessToken) {
     accessToken = cookies['spotify_access'] ?? '';
   }
-  refreshToken = cookies['spotify_refresh'] ?? '';
+  if (!refreshToken) {
+    refreshToken = cookies['spotify_refresh'] ?? '';
+  }
 
   console.log('[AUTH] Token status:', { 
     hasAccess: !!accessToken, 
     hasRefresh: !!refreshToken,
-    source: authHeader?.startsWith('Bearer ') ? 'header' : 'cookie'
+    accessSource: authHeader?.startsWith('Bearer ') ? 'header' : 'cookie',
+    refreshSource: refreshHeader ? 'header' : 'cookie'
   });
 
   return { accessToken, refreshToken };
