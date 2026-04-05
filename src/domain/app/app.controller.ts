@@ -29,9 +29,25 @@ export const debugController = new Elysia({ prefix: '/api' })
   .get('/debug-cookies', ({ request }) => {
     const rawHeader = request.headers.get('cookie') || '(none)';
     const parsed = parseCookieHeader(request.headers.get('cookie'));
+    
+    // Diagnostic info for all headers (obfuscated sensitive ones)
+    const allHeaders: Record<string, string> = {};
+    request.headers.forEach((v, k) => {
+      allHeaders[k] = v;
+    });
+
     console.log('[DEBUG] Raw cookie header:', rawHeader);
     console.log('[DEBUG] Parsed:', parsed);
-    return { rawHeader, parsed };
+    console.log('[DEBUG] All headers:', Object.keys(allHeaders));
+    
+    return { 
+      rawHeader, 
+      parsed, 
+      headerKeys: Object.keys(allHeaders),
+      isProd: env.NODE_ENV === 'production' || 
+              env.FRONTEND_URL.startsWith('https://') ||
+              request.headers.get('x-forwarded-proto') === 'https'
+    };
   });
 
 export const appController = new Elysia({ prefix: '/api' })
@@ -58,6 +74,7 @@ export const appController = new Elysia({ prefix: '/api' })
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
+        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -66,6 +83,7 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
+          partitioned: isProd,
         });
       }
     };
@@ -106,6 +124,7 @@ export const appController = new Elysia({ prefix: '/api' })
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
+        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -114,6 +133,7 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
+          partitioned: isProd,
         });
       }
     };
@@ -143,6 +163,7 @@ export const appController = new Elysia({ prefix: '/api' })
         path: '/',
         sameSite: isProd ? 'none' : 'lax',
         secure: isProd,
+        partitioned: isProd,
       });
       if (newRefresh) {
         cookie.spotify_refresh.set({
@@ -151,6 +172,7 @@ export const appController = new Elysia({ prefix: '/api' })
           path: '/',
           sameSite: isProd ? 'none' : 'lax',
           secure: isProd,
+          partitioned: isProd,
         });
       }
     };

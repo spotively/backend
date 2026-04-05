@@ -56,8 +56,9 @@ export const authController = new Elysia({ prefix: '/auth' })
       value: data.access_token,
       httpOnly: true,
       path: '/',
-      sameSite: isProd ? 'none' : 'lax',
+      sameSite: isProd ? 'none' : 'lax', // Use explicit none for prod
       secure: isProd,
+      partitioned: isProd, // Re-enable for CHIPS support
       maxAge: data.expires_in
     });
 
@@ -67,6 +68,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       path: '/',
       sameSite: isProd ? 'none' : 'lax',
       secure: isProd,
+      partitioned: isProd, 
       maxAge: 60 * 60 * 24 * 30 // 30 days
     });
 
