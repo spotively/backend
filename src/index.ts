@@ -1,19 +1,20 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { authController } from "./domain/auth/auth.controller";
-import { appController } from "./domain/app/app.controller";
+import { appController, debugController } from "./domain/app/app.controller";
 import { env } from "./config/env"
 
 console.log('Backend running. Frontend expected at:', env.FRONTEND_URL);
 
 const app = new Elysia()
   .use(cors({
-    origin: [env.FRONTEND_URL, 'https://frontend-7z9.pages.dev', 'http://127.0.0.1:5173'],
+    origin: [env.FRONTEND_URL, 'https://frontend-7z9.pages.dev', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000', 'https://backend-mnhi.onrender.com'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
   }))
   .use(authController)
+  .use(debugController)
   .use(appController)
   .get('/', () => ({
     message: 'Spotify Vibe API Running',

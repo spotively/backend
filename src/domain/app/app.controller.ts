@@ -2,102 +2,120 @@ import Elysia, { t } from "elysia";
 import { SpotifyService } from "../spotify/spotify.service";
 import { ImageService } from "../image/image.service";
 
+/** Parse a raw Cookie header string into a key/value map */
+function parseCookieHeader(header: string | null): Record<string, string> {
+  if (!header) return {};
+  return Object.fromEntries(
+    header.split(';').map(pair => {
+      const idx = pair.indexOf('=');
+      return [pair.slice(0, idx).trim(), decodeURIComponent(pair.slice(idx + 1).trim())];
+    })
+  );
+}
+
+/** Read tokens directly from the raw Cookie request header */
+function getTokensFromRequest(request: Request): { accessToken: string; refreshToken: string } {
+  const cookies = parseCookieHeader(request.headers.get('cookie'));
+  console.log('[AUTH] Raw cookies received:', Object.keys(cookies));
+  return {
+    accessToken: cookies['spotify_access'] ?? '',
+    refreshToken: cookies['spotify_refresh'] ?? '',
+  };
+}
+
+// Standalone debug route — no derive, so cookie reading is always reliable here
+export const debugController = new Elysia({ prefix: '/api' })
+  .get('/debug-cookies', ({ request }) => {
+    const rawHeader = request.headers.get('cookie') || '(none)';
+    const parsed = parseCookieHeader(request.headers.get('cookie'));
+    console.log('[DEBUG] Raw cookie header:', rawHeader);
+    console.log('[DEBUG] Parsed:', parsed);
+    return { rawHeader, parsed };
+  });
+
 export const appController = new Elysia({ prefix: '/api' })
-  .derive(({ cookie: { spotify_access, spotify_refresh } }) => {
-    console.log('[API] Checking cookies:', { 
-      hasAccess: !!spotify_access.value, 
-      hasRefresh: !!spotify_refresh.value 
-    });
-    
-    if (!spotify_access.value || !spotify_refresh.value) {
-      return { userUnauthorized: true };
-    }
+  .get('/top', async ({ request, cookie, query, set }) => {
+    const { accessToken, refreshToken } = getTokensFromRequest(request);
 
-    const updateTokens = (newAccess: string, newRefresh?: string) => {
-      spotify_access.value = newAccess;
-      if (newRefresh) spotify_refresh.value = newRefresh;
-    };
-
-    return {
-      spotifyService: new SpotifyService(spotify_access.value, spotify_refresh.value, updateTokens),
-      ImageService: new ImageService(),
-      userUnauthorized: false
-    }
-  })
-  .get('/top', async ({ query, spotifyService, userUnauthorized, set }) => {
-    if (userUnauthorized) {
+    if (!accessToken || !refreshToken) {
       set.status = 401;
       return { error: 'userUnauthorized, Please login first' };
     }
+
+    const updateTokens = (newAccess: string, newRefresh?: string) => {
+      cookie.spotify_access.value = newAccess;
+      if (newRefresh) cookie.spotify_refresh.value = newRefresh;
+    };
+
+    const spotifyService = new SpotifyService(accessToken, refreshToken, updateTokens);
     const type = (query.type as string) || 'tracks';
     const timeRange = (query.timeRange as string) || 'medium_term';
     const limit = parseInt((query.limit as string) || '5', 10);
-    let data: any[] = [];
 
-    if (!spotifyService) {
-        set.status = 401;
-        return { error: 'Spotify service not initialized' };
-    }
+    if (type === 'artists') return { type, items: await spotifyService.getTopArtists(timeRange, limit) };
+    if (type === 'tracks') return { type, items: await spotifyService.getTopTracks(timeRange, limit) };
 
-    if (type === "artists") data = await spotifyService.getTopArtists(timeRange, limit);
-    else if (type === 'tracks') data = await spotifyService.getTopTracks(timeRange, limit);
-    else {
-        set.status = 400;
-        return { error: "Invalid type" };
-    }
-    return { type, items: data };
+    set.status = 400;
+    return { error: 'Invalid type' };
   }, {
     query: t.Object({ type: t.Optional(t.String()), timeRange: t.Optional(t.String()), limit: t.Optional(t.String()) })
   })
-  .get('/me', async ({ spotifyService, set, userUnauthorized }) => {
-    if (userUnauthorized || !spotifyService) {
-        set.status = 401;
-        return { error: 'Unauthorized' };
+  .get('/me', async ({ request, cookie, set }) => {
+    const { accessToken, refreshToken } = getTokensFromRequest(request);
+
+    if (!accessToken || !refreshToken) {
+      set.status = 401;
+      return { error: 'Unauthorized' };
     }
-    return await spotifyService.getUserProfile();
+
+    const updateTokens = (newAccess: string, newRefresh?: string) => {
+      cookie.spotify_access.value = newAccess;
+      if (newRefresh) cookie.spotify_refresh.value = newRefresh;
+    };
+
+    return await new SpotifyService(accessToken, refreshToken, updateTokens).getUserProfile();
   })
-  .get('/generate-image', async ({ query, spotifyService, ImageService, set, userUnauthorized }) => {
-    if (userUnauthorized) {
-        set.status = 401;
-        return { error: 'Unauthorized. Please /auth/login first.' };
+  .get('/generate-image', async ({ request, cookie, query, set }) => {
+    const { accessToken, refreshToken } = getTokensFromRequest(request);
+
+    if (!accessToken || !refreshToken) {
+      set.status = 401;
+      return { error: 'Unauthorized. Please /auth/login first.' };
     }
+
+    const updateTokens = (newAccess: string, newRefresh?: string) => {
+      cookie.spotify_access.value = newAccess;
+      if (newRefresh) cookie.spotify_refresh.value = newRefresh;
+    };
+
+    const spotifyService = new SpotifyService(accessToken, refreshToken, updateTokens);
+    const imageService = new ImageService();
 
     const type = (query.type as string) || 'tracks';
     const timeRange = (query.timeRange as string) || 'medium_term';
     const limit = parseInt((query.limit as string) || '5', 10);
-    let items: any[] = [];
 
     try {
-      if (!spotifyService || !ImageService) {
-        set.status = 401;
-        return { error: 'Services not initialized' };
-      }
+      let items: any[] = [];
 
       if (type === 'artists') items = await spotifyService.getTopArtists(timeRange, limit);
       else if (type === 'tracks') items = await spotifyService.getTopTracks(timeRange, limit);
       else {
-          set.status = 400;
-          return { error: 'Invalid type. Use artists or tracks' };
+        set.status = 400;
+        return { error: 'Invalid type. Use artists or tracks' };
       }
 
       const stringItems = items.map(i => `${i.name} by ${i.subtitle}`);
 
-      // If raw flag is enabled, we skip the server-side text overlay.
       if (query.raw === 'true') {
-        const base64Image = await ImageService.generateImage(stringItems, type);
+        const base64Image = await imageService.generateImage(stringItems, type);
         return { success: true, base64: `data:image/jpeg;base64,${base64Image}` };
       }
 
-      // 1. Generate aesthetic base64 background using Gemini
-      const base64Image = await ImageService.generateImage(stringItems, type);
+      const base64Image = await imageService.generateImage(stringItems, type);
+      const finalSvg = imageService.createSVGOverlay(base64Image, stringItems, type);
 
-      // 2. Overlay text using SVG
-      const finalSvg = ImageService.createSVGOverlay(base64Image, stringItems, type);
-
-      // 3. Serve as image file 
       set.headers['Content-Type'] = 'image/svg+xml';
-
-      // If download=true is passed, force file download
       if (query.download === 'true') {
         set.headers['Content-Disposition'] = `attachment; filename="spotify-vibe-${type}.svg"`;
       }
